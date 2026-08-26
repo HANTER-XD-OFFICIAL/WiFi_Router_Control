@@ -23,6 +23,9 @@ import com.example.network.SpeedStage
 import com.example.network.SpeedTestEngine
 import com.example.network.SpeedTestState
 import com.example.network.WolHelper
+import android.content.Context
+import android.content.SharedPreferences
+import com.example.ui.language.AppLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +38,19 @@ import kotlinx.coroutines.withContext
 
 class RouterViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val prefs: SharedPreferences = application.getSharedPreferences("router_app_prefs", Context.MODE_PRIVATE)
     private val repository: RouterRepository
+
+    private val _currentLanguage = MutableStateFlow(
+        AppLanguage.fromCode(prefs.getString("app_language", AppLanguage.ENGLISH.code) ?: AppLanguage.ENGLISH.code)
+    )
+    val currentLanguage: StateFlow<AppLanguage> = _currentLanguage.asStateFlow()
+
+    fun setLanguage(language: AppLanguage) {
+        _currentLanguage.value = language
+        prefs.edit().putString("app_language", language.code).apply()
+    }
+
     init {
         val db = AppDatabase.getDatabase(application)
         repository = RouterRepository(db.routerDao())

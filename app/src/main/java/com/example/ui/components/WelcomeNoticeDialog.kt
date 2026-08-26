@@ -375,12 +375,9 @@ fun WelcomeNoticeDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            // Cancel Button -> Opens Developer's Facebook Profile
+                            // Cancel Button -> Closes dialog and continues to app
                             OutlinedButton(
-                                onClick = {
-                                    openFacebookUrl(context)
-                                    onDismiss()
-                                },
+                                onClick = onDismiss,
                                 modifier = Modifier
                                     .weight(1f)
                                     .testTag("welcome_btn_cancel"),
@@ -395,7 +392,7 @@ fun WelcomeNoticeDialog(
                                 )
                             }
 
-                            // Join / View Facebook Button
+                            // Join / View Facebook Button (ONLY button that opens Facebook)
                             Button(
                                 onClick = {
                                     openFacebookUrl(context)
@@ -417,7 +414,7 @@ fun WelcomeNoticeDialog(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Join / Facebook",
+                                    text = "Join Facebook",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
                                 )

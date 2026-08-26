@@ -49,8 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.ui.components.DeveloperSupportBottomSheet
+import com.example.ui.components.LanguageSelectionDialog
 import com.example.ui.components.TopNetworkAppBar
 import com.example.ui.components.WelcomeNoticeDialog
+import com.example.ui.language.AppStrings
 import com.example.ui.screens.ConnectedDevicesScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.DiagnosticsToolsScreen
@@ -91,8 +93,10 @@ fun MainApp(viewModel: RouterViewModel) {
     var isAppLoading by remember { mutableStateOf(true) }
     var showWelcomeDialog by remember { mutableStateOf(false) }
     var showDeveloperSupportSheet by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     // Collect States
+    val currentLanguage by viewModel.currentLanguage.collectAsState()
     val wifiState by viewModel.wifiState.collectAsState()
     val allRouters by viewModel.allRouters.collectAsState()
     val boundRouters by viewModel.boundRouters.collectAsState()
@@ -165,10 +169,11 @@ fun MainApp(viewModel: RouterViewModel) {
                 topBar = {
                     if (currentScreen != 4) { // Don't show top bar on full-screen Admin WebView
                         TopNetworkAppBar(
-                            title = "WiFi Router Manager",
+                            title = AppStrings.appTitle(currentLanguage),
                             ssid = wifiState.ssid,
                             isConnected = wifiState.isWifiConnected,
                             onOpenSupport = { showDeveloperSupportSheet = true },
+                            onOpenLanguage = { showLanguageDialog = true },
                             onRefresh = {
                                 viewModel.refreshWifiState()
                             }
@@ -186,7 +191,7 @@ fun MainApp(viewModel: RouterViewModel) {
                                 selected = currentScreen == 0,
                                 onClick = { currentScreen = 0 },
                                 icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                                label = { Text("Home", fontSize = 11.sp) },
+                                label = { Text(AppStrings.dashboard(currentLanguage), fontSize = 11.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = PrimaryCyan,
                                     selectedTextColor = PrimaryCyan,
@@ -201,7 +206,7 @@ fun MainApp(viewModel: RouterViewModel) {
                                 selected = currentScreen == 1,
                                 onClick = { currentScreen = 1 },
                                 icon = { Icon(Icons.Default.CloudDone, contentDescription = "Binding") },
-                                label = { Text("Binding", fontSize = 11.sp) },
+                                label = { Text(AppStrings.routers(currentLanguage), fontSize = 11.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = PrimaryCyan,
                                     selectedTextColor = PrimaryCyan,
@@ -216,7 +221,7 @@ fun MainApp(viewModel: RouterViewModel) {
                                 selected = currentScreen == 2,
                                 onClick = { currentScreen = 2 },
                                 icon = { Icon(Icons.Default.Devices, contentDescription = "Devices") },
-                                label = { Text("Devices", fontSize = 11.sp) },
+                                label = { Text(AppStrings.devices(currentLanguage), fontSize = 11.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = PrimaryCyan,
                                     selectedTextColor = PrimaryCyan,
@@ -234,7 +239,7 @@ fun MainApp(viewModel: RouterViewModel) {
                                     currentScreen = 3
                                 },
                                 icon = { Icon(Icons.Default.Build, contentDescription = "Tools") },
-                                label = { Text("Tools", fontSize = 11.sp) },
+                                label = { Text(AppStrings.diagnostics(currentLanguage), fontSize = 11.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = PrimaryCyan,
                                     selectedTextColor = PrimaryCyan,
@@ -326,6 +331,15 @@ fun MainApp(viewModel: RouterViewModel) {
                 if (showWelcomeDialog) {
                     WelcomeNoticeDialog(
                         onDismiss = { showWelcomeDialog = false }
+                    )
+                }
+
+                // Language Selection Dialog
+                if (showLanguageDialog) {
+                    LanguageSelectionDialog(
+                        currentLanguage = currentLanguage,
+                        onLanguageSelected = { viewModel.setLanguage(it) },
+                        onDismiss = { showLanguageDialog = false }
                     )
                 }
 

@@ -66,6 +66,7 @@ fun TopNetworkAppBar(
     isConnected: Boolean,
     onRefresh: () -> Unit,
     onOpenSupport: () -> Unit,
+    onOpenLanguage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -135,6 +136,23 @@ fun TopNetworkAppBar(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(
+                    onClick = onOpenLanguage,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(SurfaceElevated)
+                        .border(1.dp, PrimaryCyan.copy(alpha = 0.3f), CircleShape)
+                        .testTag("language_switch_top_btn")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = "Language",
+                        tint = PrimaryCyan,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
                 IconButton(
                     onClick = onOpenSupport,
                     modifier = Modifier
