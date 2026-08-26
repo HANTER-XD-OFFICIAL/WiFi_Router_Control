@@ -3,6 +3,12 @@ package com.example.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,6 +45,7 @@ import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -139,63 +147,90 @@ fun ConnectedDevicesScreen(
     ) {
         item { Spacer(modifier = Modifier.height(4.dp)) }
 
-        // Scanner Control Card
+        // Scanner Control Hero Card
         item {
+            val isScanning = !scanProgress.isCompleted && scanProgress.percentage in 1..99
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceNavy),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryCyan.copy(alpha = 0.3f))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        1.2.dp,
+                        Brush.linearGradient(
+                            listOf(
+                                PrimaryCyan.copy(alpha = if (isScanning) 0.9f else 0.4f),
+                                PrimaryBlue,
+                                AccentGreen.copy(alpha = 0.4f)
+                            )
+                        ),
+                        RoundedCornerShape(22.dp)
+                    ),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceNavy)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    PrimaryCyan.copy(alpha = if (isScanning) 0.16f else 0.08f),
+                                    SurfaceNavy
+                                )
+                            )
+                        )
+                        .padding(18.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "WiFi Connected Devices Scanner",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isScanning) AccentOrange else PrimaryCyan)
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Discover active clients connected to your subnet",
-                                style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                                text = "LAN SUBNET SCANNER",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryCyan,
+                                    letterSpacing = 1.sp
+                                )
                             )
                         }
 
-                        if (!scanProgress.isCompleted && scanProgress.percentage in 1..99) {
-                            IconButton(
-                                onClick = onStopScan,
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.2f))
-                            ) {
-                                Icon(Icons.Default.Stop, contentDescription = "Stop", tint = AccentRed)
-                            }
-                        } else {
-                            Button(
-                                onClick = onStartScan,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF00222B)),
-                                modifier = Modifier.testTag("start_scan_btn")
-                            ) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Scan", modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Scan",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                        }
+                        StatusPill(
+                            text = if (isScanning) "${scanProgress.percentage}% Scanning" else "${scanProgress.devices.size} Discovered",
+                            color = if (isScanning) AccentOrange else AccentGreen
+                        )
                     }
 
-                    if (scanProgress.percentage > 0 && !scanProgress.isCompleted) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "Connected Devices Discovery",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextPrimary,
+                            fontSize = 20.sp
+                        )
+                    )
+
+                    Text(
+                        text = "Detect all active smartphones, computers, smart TVs, and IoT hardware on your subnet.",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = TextSecondary,
+                            lineHeight = 16.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    if (isScanning) {
                         LinearProgressIndicator(
                             progress = { scanProgress.percentage / 100f },
                             modifier = Modifier
@@ -205,17 +240,56 @@ fun ConnectedDevicesScreen(
                             color = PrimaryCyan,
                             trackColor = SurfaceElevated
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = scanProgress.status,
-                            style = MaterialTheme.typography.labelSmall.copy(color = PrimaryCyan, fontSize = 11.sp)
-                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = scanProgress.status,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = PrimaryCyan,
+                                    fontSize = 11.sp
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(
+                                onClick = onStopScan,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AccentRed.copy(alpha = 0.2f),
+                                    contentColor = AccentRed
+                                )
+                            ) {
+                                Icon(Icons.Default.Stop, contentDescription = "Stop", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Stop Scan", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                            }
+                        }
                     } else {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "${scanProgress.status} • Found ${scanProgress.devices.size} devices",
-                            style = MaterialTheme.typography.labelSmall.copy(color = AccentGreen, fontSize = 11.sp)
-                        )
+                        Button(
+                            onClick = onStartScan,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .testTag("start_scan_btn"),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryCyan,
+                                contentColor = Color(0xFF001B24)
+                            )
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Scan", modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (scanProgress.devices.isEmpty()) "Scan Subnet for Connected Devices" else "Rescan Local Subnet",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.3.sp
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -267,23 +341,52 @@ fun ConnectedDevicesScreen(
         // Device Items List
         if (filteredDevices.isEmpty()) {
             item {
-                TechCard {
+                TechCard(
+                    backgroundGradient = listOf(PrimaryBlue.copy(alpha = 0.1f), SurfaceCardNavy)
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.Devices, contentDescription = "No Devices", tint = TextMuted, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryBlue.copy(alpha = 0.2f))
+                                .border(1.dp, PrimaryCyan.copy(alpha = 0.4f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Devices, contentDescription = "No Devices", tint = PrimaryCyan, modifier = Modifier.size(28.dp))
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "No Devices Found",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = TextPrimary)
+                            text = "No Connected Devices Found",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = TextPrimary)
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Tap 'Scan' above to discover devices on your subnet",
-                            style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
+                            text = "Tap the Scan button to probe your local subnet (192.168.x.x) and identify active devices.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onStartScan,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryCyan,
+                                contentColor = Color(0xFF001B24)
+                            )
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Scan", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Start Subnet Scan",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
                     }
                 }
             }

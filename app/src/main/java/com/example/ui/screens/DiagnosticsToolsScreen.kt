@@ -26,16 +26,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
@@ -216,6 +220,10 @@ fun SpeedTestTab(
         label = "SpeedGauge"
     )
 
+    val isTestingActive = speedState.stage == SpeedStage.PINGING ||
+            speedState.stage == SpeedStage.DOWNLOADING ||
+            speedState.stage == SpeedStage.UPLOADING
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -225,24 +233,101 @@ fun SpeedTestTab(
         // Speedometer Gauge Card
         item {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        1.5.dp,
+                        Brush.linearGradient(
+                            listOf(
+                                when (speedState.stage) {
+                                    SpeedStage.UPLOADING -> AccentPurple
+                                    SpeedStage.DOWNLOADING -> PrimaryCyan
+                                    SpeedStage.PINGING -> PrimaryBlue
+                                    SpeedStage.FINISHED -> AccentGreen
+                                    else -> PrimaryCyan.copy(alpha = 0.8f)
+                                },
+                                PrimaryBlue,
+                                AccentGreen.copy(alpha = 0.5f)
+                            )
+                        ),
+                        RoundedCornerShape(24.dp)
+                    ),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceNavy),
-                border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryCyan.copy(alpha = 0.4f))
+                colors = CardDefaults.cardColors(containerColor = SurfaceNavy)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    when (speedState.stage) {
+                                        SpeedStage.UPLOADING -> AccentPurple.copy(alpha = 0.15f)
+                                        SpeedStage.DOWNLOADING -> PrimaryCyan.copy(alpha = 0.15f)
+                                        SpeedStage.FINISHED -> AccentGreen.copy(alpha = 0.15f)
+                                        else -> PrimaryCyan.copy(alpha = 0.10f)
+                                    },
+                                    SurfaceNavy
+                                )
+                            )
+                        )
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Real-time Speed & Bandwidth Meter",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = TextSecondary
-                        )
-                    )
+                    // Header Bar with Stage Pill and 20s Countdown
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        when (speedState.stage) {
+                                            SpeedStage.UPLOADING -> AccentPurple
+                                            SpeedStage.DOWNLOADING -> PrimaryCyan
+                                            SpeedStage.FINISHED -> AccentGreen
+                                            else -> PrimaryCyan
+                                        }
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "PRECISION 20-SEC SPEEDOMETER",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryCyan,
+                                    letterSpacing = 0.8.sp
+                                )
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (isTestingActive) {
+                                StatusPill(
+                                    text = "${speedState.secondsRemaining}s left",
+                                    color = AccentOrange
+                                )
+                            }
+                            StatusPill(
+                                text = speedState.stage.name,
+                                color = when (speedState.stage) {
+                                    SpeedStage.DOWNLOADING -> PrimaryCyan
+                                    SpeedStage.UPLOADING -> AccentPurple
+                                    SpeedStage.PINGING -> PrimaryBlue
+                                    SpeedStage.FINISHED -> AccentGreen
+                                    SpeedStage.ERROR -> AccentRed
+                                    else -> TextMuted
+                                }
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -251,13 +336,13 @@ fun SpeedTestTab(
                         modifier = Modifier.size(200.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Canvas(modifier = Modifier.size(180.dp)) {
+                        Canvas(modifier = Modifier.size(185.dp)) {
                             val strokeWidth = 14.dp.toPx()
                             val arcSize = size.minDimension - strokeWidth
 
-                            // Background Arc (240 degrees)
+                            // Background Track Arc (240 degrees)
                             drawArc(
-                                color = SurfaceElevated,
+                                color = SurfaceElevated.copy(alpha = 0.6f),
                                 startAngle = 150f,
                                 sweepAngle = 240f,
                                 useCenter = false,
@@ -266,10 +351,16 @@ fun SpeedTestTab(
                                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                             )
 
-                            // Active Progress Arc
+                            // Active Progress Arc with dynamic gradient
                             val progressSweep = (animatedSpeed / 100f).coerceIn(0f, 1f) * 240f
+                            val activeBrush = when (speedState.stage) {
+                                SpeedStage.UPLOADING -> Brush.sweepGradient(listOf(AccentPurple, PrimaryBlue, AccentOrange, AccentPurple))
+                                SpeedStage.DOWNLOADING -> Brush.sweepGradient(listOf(PrimaryCyan, PrimaryBlue, AccentGreen, PrimaryCyan))
+                                else -> Brush.sweepGradient(listOf(PrimaryCyan, PrimaryBlue, AccentGreen, PrimaryCyan))
+                            }
+
                             drawArc(
-                                brush = Brush.linearGradient(listOf(PrimaryCyan, AccentGreen)),
+                                brush = activeBrush,
                                 startAngle = 150f,
                                 sweepAngle = progressSweep,
                                 useCenter = false,
@@ -285,57 +376,217 @@ fun SpeedTestTab(
                                 style = MaterialTheme.typography.headlineLarge.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     color = TextPrimary,
-                                    fontSize = 38.sp
+                                    fontSize = 42.sp,
+                                    letterSpacing = 0.5.sp
                                 )
                             )
                             Text(
-                                text = "Mbps",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimaryCyan
+                                text = if (speedState.stage == SpeedStage.UPLOADING) "UPLOAD MBPS" else "DOWNLOAD MBPS",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (speedState.stage == SpeedStage.UPLOADING) AccentPurple else PrimaryCyan,
+                                    letterSpacing = 0.8.sp
                                 )
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Latency / Jitter Row
+                    // Progress Bar & Current Status Message
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        LinearProgressIndicator(
+                            progress = { speedState.progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = when (speedState.stage) {
+                                SpeedStage.UPLOADING -> AccentPurple
+                                SpeedStage.DOWNLOADING -> PrimaryCyan
+                                SpeedStage.FINISHED -> AccentGreen
+                                else -> PrimaryBlue
+                            },
+                            trackColor = SurfaceElevated
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = speedState.message,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            ),
+                            maxLines = 1
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Comprehensive Telemetry Grid (Download, Upload, Ping, Jitter)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(SurfaceCardNavy)
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                            .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("PING", style = MaterialTheme.typography.labelSmall.copy(color = TextMuted))
-                            Text(
-                                text = "${speedState.pingMs} ms",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = AccentGreen
+                        // 1. Download Speed
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDownward,
+                                    contentDescription = "Download",
+                                    tint = PrimaryCyan,
+                                    modifier = Modifier.size(13.dp)
                                 )
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("JITTER", style = MaterialTheme.typography.labelSmall.copy(color = TextMuted))
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    "DOWNLOAD",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextMuted,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "${speedState.jitterMs} ms",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold,
+                                text = "%.1f".format(speedState.finalDownloadMbps),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = PrimaryCyan
                                 )
                             )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("STAGE", style = MaterialTheme.typography.labelSmall.copy(color = TextMuted))
                             Text(
-                                text = speedState.stage.name,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlue
+                                text = "Mbps",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextMuted,
+                                    fontSize = 10.sp
+                                )
+                            )
+                        }
+
+                        // 2. Upload Speed
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowUpward,
+                                    contentDescription = "Upload",
+                                    tint = AccentPurple,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    "UPLOAD",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextMuted,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "%.1f".format(speedState.finalUploadMbps),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = AccentPurple
+                                )
+                            )
+                            Text(
+                                text = "Mbps",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextMuted,
+                                    fontSize = 10.sp
+                                )
+                            )
+                        }
+
+                        // 3. Ping Latency
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = "Ping",
+                                    tint = AccentGreen,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    "PING",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextMuted,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${speedState.pingMs}",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = AccentGreen
+                                )
+                            )
+                            Text(
+                                text = "ms",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextMuted,
+                                    fontSize = 10.sp
+                                )
+                            )
+                        }
+
+                        // 4. Jitter
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Speed,
+                                    contentDescription = "Jitter",
+                                    tint = AccentOrange,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    "JITTER",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextMuted,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${speedState.jitterMs}",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = AccentOrange
+                                )
+                            )
+                            Text(
+                                text = "ms",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextMuted,
+                                    fontSize = 10.sp
                                 )
                             )
                         }
@@ -345,23 +596,40 @@ fun SpeedTestTab(
 
                     Button(
                         onClick = onStart,
-                        enabled = speedState.stage != SpeedStage.DOWNLOADING && speedState.stage != SpeedStage.PINGING,
+                        enabled = !isTestingActive,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
+                            .height(52.dp)
                             .testTag("start_speed_test_btn"),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF00222B))
-                    ) {
-                        Icon(Icons.Default.Speed, contentDescription = "Test", modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (speedState.stage == SpeedStage.DOWNLOADING || speedState.stage == SpeedStage.PINGING)
-                                "Testing..."
-                            else
-                                "Start Speed Test",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryCyan,
+                            contentColor = Color(0xFF001B24)
                         )
+                    ) {
+                        if (isTestingActive) {
+                            Icon(
+                                imageVector = Icons.Default.HourglassEmpty,
+                                contentDescription = "Testing",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Running 20s Test (${speedState.secondsRemaining}s remaining)...",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Speed,
+                                contentDescription = "Test",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Run 20-Second Precision Speed Test",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
+                            )
+                        }
                     }
                 }
             }
@@ -369,17 +637,30 @@ fun SpeedTestTab(
 
         // Test History Section
         item {
-            Text(
-                text = "Speed Test History",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = TextPrimary)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Speed Test Log & History",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary
+                    )
+                )
+                Text(
+                    text = "${history.size} recorded",
+                    style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
+                )
+            }
         }
 
         if (history.isEmpty()) {
             item {
                 TechCard {
                     Text(
-                        text = "No previous tests recorded",
+                        text = "No previous tests recorded. Run a 20-second speed test to log results.",
                         style = MaterialTheme.typography.bodySmall.copy(color = TextMuted)
                     )
                 }
@@ -394,20 +675,71 @@ fun SpeedTestTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDownward,
+                                        contentDescription = "Down",
+                                        tint = PrimaryCyan,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = "%.1f Mbps".format(item.downloadMbps),
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = PrimaryCyan
+                                        )
+                                    )
+                                }
+
+                                if (item.uploadMbps > 0.0) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowUpward,
+                                            contentDescription = "Up",
+                                            tint = AccentPurple,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = "%.1f Mbps".format(item.uploadMbps),
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = AccentPurple
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
                             Text(
-                                text = "%.2f Mbps".format(item.downloadMbps),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimaryCyan
+                                text = "${item.ssid} • $dateStr (${item.testDurationSec}s)",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextMuted,
+                                    fontSize = 11.sp
                                 )
-                            )
-                            Text(
-                                text = "${item.ssid} • $dateStr",
-                                style = MaterialTheme.typography.labelSmall.copy(color = TextMuted, fontSize = 11.sp)
                             )
                         }
 
-                        StatusPill(text = "${item.pingMs} ms ping", color = AccentGreen)
+                        Column(horizontalAlignment = Alignment.End) {
+                            StatusPill(text = "${item.pingMs} ms ping", color = AccentGreen)
+                            if (item.jitterMs > 0) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "${item.jitterMs}ms jitter",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = TextMuted,
+                                        fontSize = 10.sp
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }

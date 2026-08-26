@@ -36,65 +36,84 @@ data class CurrentWifiState(
 object NetworkHelper {
 
     fun getWifiState(context: Context): CurrentWifiState {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-        val wifiMgr = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        try {
+            val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val wifiMgr = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
 
-        val activeNetwork = connMgr?.activeNetwork
-        val caps = activeNetwork?.let { connMgr.getNetworkCapabilities(it) }
-        val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            val activeNetwork = connMgr?.activeNetwork
+            val caps = activeNetwork?.let { connMgr.getNetworkCapabilities(it) }
+            val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
-        if (!isWifi || wifiMgr == null) {
-            return CurrentWifiState(isWifiConnected = false)
+            if (!isWifi || wifiMgr == null) {
+                return CurrentWifiState(isWifiConnected = false)
+            }
+
+            val wifiInfo: WifiInfo? = try { wifiMgr.connectionInfo } catch (_: Exception) { null }
+            val dhcpInfo: DhcpInfo? = try { wifiMgr.dhcpInfo } catch (_: Exception) { null }
+
+            var ssid = wifiInfo?.ssid?.replace("\"", "") ?: "Connected WiFi"
+            if (ssid == "<unknown ssid>" || ssid.isBlank()) {
+                ssid = "Connected WiFi"
+            }
+
+            val bssid = wifiInfo?.bssid ?: "--:--:--:--:--:--"
+            val gatewayInt = dhcpInfo?.gateway ?: 0
+            val gatewayIp = if (gatewayInt != 0) formatIpAddress(gatewayInt) else "192.168.0.1"
+
+            val localIpInt = dhcpInfo?.ipAddress ?: (wifiInfo?.ipAddress ?: 0)
+            val localIp = if (localIpInt != 0) formatIpAddress(localIpInt) else "192.168.0.100"
+
+            val netmaskInt = dhcpInfo?.netmask ?: 0
+            val subnetMask = if (netmaskInt != 0) formatIpAddress(netmaskInt) else "255.255.255.0"
+
+            val dns1Int = dhcpInfo?.dns1 ?: 0
+            val dns1 = if (dns1Int != 0) formatIpAddress(dns1Int) else "8.8.8.8"
+
+            val dns2Int = dhcpInfo?.dns2 ?: 0
+            val dns2 = if (dns2Int != 0) formatIpAddress(dns2Int) else "8.8.4.4"
+
+            val rssi = wifiInfo?.rssi ?: -65
+            val signalPercent = try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    wifiMgr.calculateSignalLevel(rssi) * 25 // 0-4 scale converted to 0-100
+                } else {
+                    @Suppress("DEPRECATION")
+                    WifiManager.calculateSignalLevel(rssi, 100).coerceIn(0, 100)
+                }
+            } catch (_: Exception) {
+                (rssi + 100).coerceIn(0, 100)
+            }
+
+            val linkSpeed = wifiInfo?.linkSpeed ?: 0
+            val frequency = wifiInfo?.frequency ?: 0
+            val is5G = frequency >= 4900
+
+            val brand = RouterPresets.guessBrandByGateway(gatewayIp)
+
+            return CurrentWifiState(
+                isWifiConnected = true,
+                ssid = ssid,
+                bssid = bssid,
+                gatewayIp = gatewayIp,
+                localIp = localIp,
+                subnetMask = subnetMask,
+                dns1 = dns1,
+                dns2 = dns2,
+                rssiDbm = rssi,
+                signalPercentage = signalPercent.coerceIn(0, 100),
+                linkSpeedMbps = linkSpeed,
+                frequencyMhz = frequency,
+                is5Ghz = is5G,
+                guessedBrand = brand
+            )
+        } catch (_: Exception) {
+            return CurrentWifiState(
+                isWifiConnected = true,
+                ssid = "Connected WiFi",
+                gatewayIp = "192.168.0.1",
+                localIp = "192.168.0.100"
+            )
         }
-
-        val wifiInfo: WifiInfo? = wifiMgr.connectionInfo
-        val dhcpInfo: DhcpInfo? = wifiMgr.dhcpInfo
-
-        var ssid = wifiInfo?.ssid?.replace("\"", "") ?: "Unknown WiFi"
-        if (ssid == "<unknown ssid>" || ssid.isBlank()) {
-            ssid = "Connected WiFi"
-        }
-
-        val bssid = wifiInfo?.bssid ?: "--:--:--:--:--:--"
-        val gatewayInt = dhcpInfo?.gateway ?: 0
-        val gatewayIp = if (gatewayInt != 0) formatIpAddress(gatewayInt) else "192.168.0.1"
-
-        val localIpInt = dhcpInfo?.ipAddress ?: (wifiInfo?.ipAddress ?: 0)
-        val localIp = if (localIpInt != 0) formatIpAddress(localIpInt) else "192.168.0.100"
-
-        val netmaskInt = dhcpInfo?.netmask ?: 0
-        val subnetMask = if (netmaskInt != 0) formatIpAddress(netmaskInt) else "255.255.255.0"
-
-        val dns1Int = dhcpInfo?.dns1 ?: 0
-        val dns1 = if (dns1Int != 0) formatIpAddress(dns1Int) else "8.8.8.8"
-
-        val dns2Int = dhcpInfo?.dns2 ?: 0
-        val dns2 = if (dns2Int != 0) formatIpAddress(dns2Int) else "8.8.4.4"
-
-        val rssi = wifiInfo?.rssi ?: -100
-        val signalPercent = WifiManager.calculateSignalLevel(rssi, 100).coerceIn(0, 100)
-        val linkSpeed = wifiInfo?.linkSpeed ?: 0
-        val frequency = wifiInfo?.frequency ?: 0
-        val is5G = frequency >= 4900
-
-        val brand = RouterPresets.guessBrandByGateway(gatewayIp)
-
-        return CurrentWifiState(
-            isWifiConnected = true,
-            ssid = ssid,
-            bssid = bssid,
-            gatewayIp = gatewayIp,
-            localIp = localIp,
-            subnetMask = subnetMask,
-            dns1 = dns1,
-            dns2 = dns2,
-            rssiDbm = rssi,
-            signalPercentage = signalPercent,
-            linkSpeedMbps = linkSpeed,
-            frequencyMhz = frequency,
-            is5Ghz = is5G,
-            guessedBrand = brand
-        )
     }
 
     private fun formatIpAddress(ip: Int): String {

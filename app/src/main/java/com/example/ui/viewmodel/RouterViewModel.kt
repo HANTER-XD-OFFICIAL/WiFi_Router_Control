@@ -354,6 +354,8 @@ class RouterViewModel(application: Application) : AndroidViewModel(application) 
                         pingMs = state.pingMs,
                         jitterMs = state.jitterMs,
                         downloadMbps = state.finalDownloadMbps,
+                        uploadMbps = state.finalUploadMbps,
+                        testDurationSec = state.totalDurationSec,
                         ssid = _wifiState.value.ssid,
                         gatewayIp = _wifiState.value.gatewayIp
                     )

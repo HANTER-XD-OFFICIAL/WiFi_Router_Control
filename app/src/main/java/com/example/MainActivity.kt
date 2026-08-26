@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -55,6 +56,7 @@ import com.example.ui.components.WelcomeNoticeDialog
 import com.example.ui.language.AppStrings
 import com.example.ui.screens.ConnectedDevicesScreen
 import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.DeveloperSupportScreen
 import com.example.ui.screens.DiagnosticsToolsScreen
 import com.example.ui.screens.RouterAdminWebScreen
 import com.example.ui.screens.RouterBindingScreen
@@ -167,12 +169,12 @@ fun MainApp(viewModel: RouterViewModel) {
                     .background(DarkNavyBg),
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
-                    if (currentScreen != 4) { // Don't show top bar on full-screen Admin WebView
+                    if (currentScreen != 5) { // Don't show top bar on full-screen Admin WebView
                         TopNetworkAppBar(
                             title = AppStrings.appTitle(currentLanguage),
                             ssid = wifiState.ssid,
                             isConnected = wifiState.isWifiConnected,
-                            onOpenSupport = { showDeveloperSupportSheet = true },
+                            onOpenSupport = { currentScreen = 4 },
                             onOpenLanguage = { showLanguageDialog = true },
                             onRefresh = {
                                 viewModel.refreshWifiState()
@@ -181,7 +183,7 @@ fun MainApp(viewModel: RouterViewModel) {
                     }
                 },
                 bottomBar = {
-                    if (currentScreen != 4) {
+                    if (currentScreen != 5) {
                         NavigationBar(
                             containerColor = SurfaceNavy,
                             contentColor = PrimaryCyan,
@@ -249,6 +251,21 @@ fun MainApp(viewModel: RouterViewModel) {
                                 ),
                                 modifier = Modifier.testTag("nav_tools")
                             )
+
+                            NavigationBarItem(
+                                selected = currentScreen == 4,
+                                onClick = { currentScreen = 4 },
+                                icon = { Icon(Icons.Default.SupportAgent, contentDescription = "Support") },
+                                label = { Text(AppStrings.support(currentLanguage), fontSize = 11.sp) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = PrimaryCyan,
+                                    selectedTextColor = PrimaryCyan,
+                                    unselectedIconColor = TextMuted,
+                                    unselectedTextColor = TextMuted,
+                                    indicatorColor = PrimaryCyan.copy(alpha = 0.15f)
+                                ),
+                                modifier = Modifier.testTag("nav_support")
+                            )
                         }
                     }
                 }
@@ -265,7 +282,7 @@ fun MainApp(viewModel: RouterViewModel) {
                             boundRouters = boundRouters,
                             onOpenAdmin = { url, user, pass ->
                                 viewModel.openRouterAdmin(url, user, pass)
-                                currentScreen = 4
+                                currentScreen = 5
                             },
                             onNavigateToBinding = { currentScreen = 1 },
                             onNavigateToDevices = { currentScreen = 2 },
@@ -273,7 +290,7 @@ fun MainApp(viewModel: RouterViewModel) {
                                 toolsInitialTab = tabIndex
                                 currentScreen = 3
                             },
-                            onOpenDeveloperSupport = { showDeveloperSupportSheet = true }
+                            onOpenDeveloperSupport = { currentScreen = 4 }
                         )
                         1 -> RouterBindingScreen(
                             routers = allRouters,
@@ -285,7 +302,7 @@ fun MainApp(viewModel: RouterViewModel) {
                             },
                             onOpenAdmin = { url, user, pass ->
                                 viewModel.openRouterAdmin(url, user, pass)
-                                currentScreen = 4
+                                currentScreen = 5
                             },
                             onSendWol = { mac ->
                                 viewModel.sendWol(mac)
@@ -315,7 +332,8 @@ fun MainApp(viewModel: RouterViewModel) {
                             onStartDnsBenchmark = { viewModel.startDnsBenchmark() },
                             onSendWol = { mac -> viewModel.sendWol(mac) }
                         )
-                        4 -> RouterAdminWebScreen(
+                        4 -> DeveloperSupportScreen()
+                        5 -> RouterAdminWebScreen(
                             initialUrl = activeAdminUrl,
                             adminUser = activeAdminUser,
                             adminPass = activeAdminPass,

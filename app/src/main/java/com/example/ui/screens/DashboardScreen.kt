@@ -3,6 +3,13 @@ package com.example.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.widget.Toast
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,21 +30,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiTethering
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,9 +60,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -71,11 +83,16 @@ import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentOrange
 import com.example.ui.theme.AccentPurple
 import com.example.ui.theme.AccentRed
+import com.example.ui.theme.BorderMedium
 import com.example.ui.theme.BorderSubtle
+import com.example.ui.theme.DarkNavyBg
 import com.example.ui.theme.PrimaryBlue
 import com.example.ui.theme.PrimaryCyan
+import com.example.ui.theme.PrimaryCyanVariant
+import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SurfaceCardNavy
 import com.example.ui.theme.SurfaceElevated
+import com.example.ui.theme.SurfaceHighlight
 import com.example.ui.theme.SurfaceNavy
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
@@ -94,6 +111,17 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
 
+    val infiniteTransition = rememberInfiniteTransition(label = "DashboardPulse")
+    val pulseGlow by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "GlowIntensity"
+    )
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -109,63 +137,114 @@ fun DashboardScreen(
                     .fillMaxWidth()
                     .border(
                         1.5.dp,
-                        Brush.linearGradient(listOf(PrimaryCyan, PrimaryBlue)),
+                        Brush.linearGradient(
+                            listOf(
+                                PrimaryCyan.copy(alpha = pulseGlow),
+                                PrimaryBlue,
+                                AccentGreen.copy(alpha = 0.5f)
+                            )
+                        ),
                         RoundedCornerShape(24.dp)
                     )
                     .testTag("hero_router_card"),
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = SurfaceNavy)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    PrimaryBlue.copy(alpha = 0.18f),
+                                    SurfaceNavy
+                                )
+                            )
+                        )
+                        .padding(20.dp)
+                ) {
+                    // Gateway Header & Status Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(
-                                text = "Current Router Gateway",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = TextSecondary,
-                                    fontSize = 12.sp
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(PrimaryCyan)
                                 )
-                            )
-                            Text(
-                                text = wifiState.gatewayIp,
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = PrimaryCyan,
-                                    letterSpacing = 1.sp
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "ACTIVE GATEWAY",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = PrimaryCyan,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    )
                                 )
-                            )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable {
+                                    copyText(context, wifiState.gatewayIp)
+                                }
+                            ) {
+                                Text(
+                                    text = wifiState.gatewayIp,
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = TextPrimary,
+                                        letterSpacing = 1.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy IP",
+                                    tint = PrimaryCyan.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
 
                         StatusPill(
-                            text = if (wifiState.gatewayPingMs >= 0) "${wifiState.gatewayPingMs} ms" else if (wifiState.isWifiConnected) "Active" else "Offline",
-                            color = if (wifiState.gatewayPingMs in 0..100) AccentGreen else if (wifiState.isWifiConnected) AccentOrange else AccentRed
+                            text = if (wifiState.gatewayPingMs >= 0) "${wifiState.gatewayPingMs} ms" else if (wifiState.isWifiConnected) "Connected" else "Offline",
+                            color = if (wifiState.gatewayPingMs in 0..80) AccentGreen else if (wifiState.isWifiConnected) AccentOrange else AccentRed
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
+                    // Brand & Link Speed Telemetry Strip
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(SurfaceCardNavy)
-                            .padding(12.dp),
+                            .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp))
+                            .padding(14.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
                             Text(
-                                text = "Detected Brand",
-                                style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
+                                text = "HARDWARE VENDOR",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextMuted,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
                             )
                             Text(
                                 text = wifiState.guessedBrand,
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     color = TextPrimary
                                 )
                             )
@@ -187,12 +266,12 @@ fun DashboardScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(52.dp)
                             .testTag("open_admin_btn"),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PrimaryCyan,
-                            contentColor = Color(0xFF00222B)
+                            contentColor = Color(0xFF001B24)
                         )
                     ) {
                         Icon(
@@ -202,8 +281,11 @@ fun DashboardScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Open Current Gateway (${wifiState.gatewayIp})",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            text = "Launch Gateway Console (${wifiState.gatewayIp})",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.3.sp
+                            )
                         )
                     }
 
@@ -222,7 +304,7 @@ fun DashboardScreen(
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = PrimaryCyan
                         ),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryCyan.copy(alpha = 0.6f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryCyan.copy(alpha = 0.5f))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Router,
@@ -232,11 +314,64 @@ fun DashboardScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Launch Cudy Router (192.168.10.1/cgi-bin/luci/)",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                            text = "Direct Cudy LuCI (192.168.10.1/cgi-bin/luci/)",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
                         )
                     }
                 }
+            }
+        }
+
+        // Live Vital Network Telemetry Widgets Grid (4 Quadrants)
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                TelemetryWidget(
+                    title = "SIGNAL STRENGTH",
+                    value = "${wifiState.signalPercentage}%",
+                    subtitle = "${wifiState.rssiDbm} dBm",
+                    icon = Icons.Default.SignalCellularAlt,
+                    accentColor = if (wifiState.signalPercentage >= 50) AccentGreen else AccentOrange,
+                    modifier = Modifier.weight(1f)
+                )
+
+                TelemetryWidget(
+                    title = "BAND / FREQ",
+                    value = if (wifiState.is5Ghz) "5.0 GHz" else "2.4 GHz",
+                    subtitle = "${wifiState.linkSpeedMbps} Mbps Link",
+                    icon = Icons.Default.WifiTethering,
+                    accentColor = PrimaryCyan,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                TelemetryWidget(
+                    title = "LATENCY PING",
+                    value = if (wifiState.gatewayPingMs >= 0) "${wifiState.gatewayPingMs} ms" else "---",
+                    subtitle = "Gateway RTT",
+                    icon = Icons.Default.Timer,
+                    accentColor = if (wifiState.gatewayPingMs in 0..60) AccentGreen else AccentOrange,
+                    modifier = Modifier.weight(1f)
+                )
+
+                TelemetryWidget(
+                    title = "SUBNET IP",
+                    value = wifiState.localIp,
+                    subtitle = "Class C /24",
+                    icon = Icons.Default.Security,
+                    accentColor = PrimaryBlue,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
@@ -249,24 +384,24 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDone,
-                            contentDescription = "Bound Routers",
-                            tint = PrimaryCyan,
-                            modifier = Modifier.size(20.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp, 16.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(PrimaryCyan)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Bound Remote Routers",
+                            text = "Bound Cloud & Remote Routers",
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = TextPrimary
                             )
                         )
                     }
 
                     Text(
-                        text = "View All",
+                        text = "Manage All →",
                         style = MaterialTheme.typography.labelMedium.copy(
                             color = PrimaryCyan,
                             fontWeight = FontWeight.Bold
@@ -278,13 +413,14 @@ fun DashboardScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 if (boundRouters.isEmpty()) {
                     TechCard(
                         modifier = Modifier
                             .clickable { onNavigateToBinding() }
-                            .testTag("empty_bound_card")
+                            .testTag("empty_bound_card"),
+                        backgroundGradient = listOf(PrimaryBlue.copy(alpha = 0.12f), SurfaceCardNavy)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -294,30 +430,31 @@ fun DashboardScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(42.dp)
                                         .clip(CircleShape)
-                                        .background(PrimaryBlue.copy(alpha = 0.2f)),
+                                        .background(PrimaryBlue.copy(alpha = 0.2f))
+                                        .border(1.dp, PrimaryCyan.copy(alpha = 0.4f), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CloudQueue,
                                         contentDescription = "Cloud",
                                         tint = PrimaryCyan,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(14.dp))
                                 Column {
                                     Text(
-                                        text = "No Bound Routers Yet",
+                                        text = "Add / Bind Routers for Remote Access",
                                         style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Bold,
                                             color = TextPrimary
                                         )
                                     )
                                     Text(
-                                        text = "Bind your router for global access from anywhere",
-                                        style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
+                                        text = "Control home & office routers from anywhere globally",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
                                     )
                                 }
                             }
@@ -325,7 +462,7 @@ fun DashboardScreen(
                                 imageVector = Icons.Default.ArrowForward,
                                 contentDescription = "Go",
                                 tint = PrimaryCyan,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -349,13 +486,25 @@ fun DashboardScreen(
 
         // Quick Control & Tools Grid
         item {
-            Text(
-                text = "Router Tools & Controls",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(4.dp, 16.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(AccentGreen)
                 )
-            )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Diagnostics & Toolkit",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary
+                    )
+                )
+            }
         }
 
         item {
@@ -365,8 +514,8 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     QuickActionCard(
-                        title = "Connected Devices",
-                        subtitle = "LAN Subnet Scanner",
+                        title = "Subnet Scanner",
+                        subtitle = "Find connected IP/MACs",
                         icon = Icons.Default.Devices,
                         tint = PrimaryCyan,
                         modifier = Modifier.weight(1f),
@@ -375,7 +524,7 @@ fun DashboardScreen(
 
                     QuickActionCard(
                         title = "Router Binding",
-                        subtitle = "Global Cloud Access",
+                        subtitle = "DDNS & Cloud Setup",
                         icon = Icons.Default.CloudDone,
                         tint = AccentGreen,
                         modifier = Modifier.weight(1f),
@@ -388,8 +537,8 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     QuickActionCard(
-                        title = "Speed & Ping Test",
-                        subtitle = "Real-time Throughput",
+                        title = "Speed / Ping Test",
+                        subtitle = "Bandwidth throughput",
                         icon = Icons.Default.Speed,
                         tint = AccentOrange,
                         modifier = Modifier.weight(1f),
@@ -398,7 +547,7 @@ fun DashboardScreen(
 
                     QuickActionCard(
                         title = "Port Scanner",
-                        subtitle = "Open Services & Ports",
+                        subtitle = "Discover open services",
                         icon = Icons.Default.TravelExplore,
                         tint = AccentPurple,
                         modifier = Modifier.weight(1f),
@@ -412,7 +561,7 @@ fun DashboardScreen(
                 ) {
                     QuickActionCard(
                         title = "DNS Benchmark",
-                        subtitle = "Fast DNS Switcher",
+                        subtitle = "Fastest resolver test",
                         icon = Icons.Default.Dns,
                         tint = PrimaryBlue,
                         modifier = Modifier.weight(1f),
@@ -420,8 +569,8 @@ fun DashboardScreen(
                     )
 
                     QuickActionCard(
-                        title = "Default Passwords",
-                        subtitle = "50+ Brands Directory",
+                        title = "Default Logins",
+                        subtitle = "50+ Brands Library",
                         icon = Icons.Default.Key,
                         tint = AccentGreen,
                         modifier = Modifier.weight(1f),
@@ -433,26 +582,36 @@ fun DashboardScreen(
 
         // Network Specifications Details Card
         item {
-            TechCard {
+            TechCard(
+                borderColor = BorderSubtle,
+                backgroundGradient = listOf(SurfaceNavy, SurfaceCardNavy)
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Network Configuration Specs",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Network Configuration Matrix",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
                         )
-                    )
+                        StatusPill(text = "LIVE TELEMETRY", color = PrimaryCyan)
+                    }
 
                     HorizontalDivider(color = BorderSubtle)
 
-                    SpecRow(label = "SSID", value = wifiState.ssid, onCopy = { copyText(context, wifiState.ssid) })
-                    SpecRow(label = "Local IP", value = wifiState.localIp, onCopy = { copyText(context, wifiState.localIp) })
-                    SpecRow(label = "Gateway IP", value = wifiState.gatewayIp, onCopy = { copyText(context, wifiState.gatewayIp) })
+                    SpecRow(label = "SSID (Network Name)", value = wifiState.ssid, onCopy = { copyText(context, wifiState.ssid) })
+                    SpecRow(label = "Local IP Address", value = wifiState.localIp, onCopy = { copyText(context, wifiState.localIp) })
+                    SpecRow(label = "Default Gateway IP", value = wifiState.gatewayIp, onCopy = { copyText(context, wifiState.gatewayIp) })
                     SpecRow(label = "Subnet Mask", value = wifiState.subnetMask, onCopy = { copyText(context, wifiState.subnetMask) })
-                    SpecRow(label = "DNS 1", value = wifiState.dns1, onCopy = { copyText(context, wifiState.dns1) })
-                    SpecRow(label = "DNS 2", value = wifiState.dns2, onCopy = { copyText(context, wifiState.dns2) })
-                    SpecRow(label = "BSSID", value = wifiState.bssid, onCopy = { copyText(context, wifiState.bssid) })
-                    SpecRow(label = "Link Speed", value = "${wifiState.linkSpeedMbps} Mbps", onCopy = null)
+                    SpecRow(label = "Primary DNS Server", value = wifiState.dns1, onCopy = { copyText(context, wifiState.dns1) })
+                    SpecRow(label = "Secondary DNS Server", value = wifiState.dns2, onCopy = { copyText(context, wifiState.dns2) })
+                    SpecRow(label = "Access Point BSSID", value = wifiState.bssid, onCopy = { copyText(context, wifiState.bssid) })
+                    SpecRow(label = "Physical Link Speed", value = "${wifiState.linkSpeedMbps} Mbps", onCopy = null)
                 }
             }
         }
@@ -469,6 +628,92 @@ fun DashboardScreen(
 }
 
 @Composable
+fun TelemetryWidget(
+    title: String,
+    value: String,
+    subtitle: String,
+    icon: ImageVector,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+        color = SurfaceCardNavy,
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            accentColor.copy(alpha = 0.12f),
+                            SurfaceCardNavy
+                        )
+                    )
+                )
+                .padding(14.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = TextMuted,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.6.sp
+                        )
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(accentColor.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = title,
+                            tint = accentColor,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary,
+                        fontSize = 17.sp
+                    ),
+                    maxLines = 1
+                )
+
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = accentColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun QuickActionCard(
     title: String,
     subtitle: String,
@@ -479,44 +724,59 @@ fun QuickActionCard(
 ) {
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .clickable { onClick() }
-            .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp)),
+            .border(1.dp, tint.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
         color = SurfaceCardNavy,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(18.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(tint.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = tint,
-                    modifier = Modifier.size(20.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            tint.copy(alpha = 0.12f),
+                            SurfaceCardNavy
+                        )
+                    )
+                )
+                .padding(14.dp)
+        ) {
+            Column {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(tint.copy(alpha = 0.18f))
+                        .border(1.dp, tint.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = tint,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary
+                    ),
+                    maxLines = 1
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                ),
-                maxLines = 1
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = TextMuted,
-                    fontSize = 11.sp
-                ),
-                maxLines = 1
-            )
         }
     }
 }
@@ -529,64 +789,78 @@ fun BoundRouterMiniCard(
 ) {
     Surface(
         modifier = modifier
-            .width(220.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .width(230.dp)
+            .clip(RoundedCornerShape(18.dp))
             .clickable { onOpen() }
-            .border(1.dp, BorderSubtle, RoundedCornerShape(16.dp)),
+            .border(1.2.dp, PrimaryCyan.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
         color = SurfaceCardNavy,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(18.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatusPill(text = router.locationTag, color = PrimaryCyan)
-                Icon(
-                    imageVector = Icons.Default.CloudDone,
-                    contentDescription = "Cloud",
-                    tint = AccentGreen,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = router.name,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                ),
-                maxLines = 1
-            )
-            Text(
-                text = if (router.remoteDnsUrl.isNotBlank()) router.remoteDnsUrl else "${router.ipOrHostname}:${router.port}",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = TextMuted,
-                    fontSize = 11.sp
-                ),
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = router.brand,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = PrimaryBlue,
-                        fontWeight = FontWeight.Bold
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            PrimaryBlue.copy(alpha = 0.15f),
+                            SurfaceCardNavy
+                        )
                     )
                 )
-                Text(
-                    text = "Login →",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = PrimaryCyan,
-                        fontWeight = FontWeight.Bold
+                .padding(14.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatusPill(text = router.locationTag, color = PrimaryCyan)
+                    Icon(
+                        imageVector = Icons.Default.CloudDone,
+                        contentDescription = "Cloud",
+                        tint = AccentGreen,
+                        modifier = Modifier.size(18.dp)
                     )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = router.name,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    ),
+                    maxLines = 1
                 )
+                Text(
+                    text = if (router.remoteDnsUrl.isNotBlank()) router.remoteDnsUrl else "${router.ipOrHostname}:${router.port}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = router.brand,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = PrimaryCyan,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    )
+                    Text(
+                        text = "Access Console →",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = AccentGreen,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
             }
         }
     }
@@ -605,14 +879,18 @@ fun SpecRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    fontSize = 12.sp
                 )
             )
             if (onCopy != null) {
@@ -623,8 +901,8 @@ fun SpecRow(
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copy",
-                        tint = TextMuted,
-                        modifier = Modifier.size(14.dp)
+                        tint = PrimaryCyan.copy(alpha = 0.8f),
+                        modifier = Modifier.size(13.dp)
                     )
                 }
             }
@@ -636,4 +914,5 @@ private fun copyText(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
     val clip = ClipData.newPlainText("Copied Spec", text)
     clipboard?.setPrimaryClip(clip)
+    Toast.makeText(context, "Copied: $text", Toast.LENGTH_SHORT).show()
 }

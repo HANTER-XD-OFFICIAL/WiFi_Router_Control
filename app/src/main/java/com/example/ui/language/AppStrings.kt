@@ -65,4 +65,9 @@ object AppStrings {
         AppLanguage.ENGLISH -> "Developer Support"
         AppLanguage.BENGALI -> "ডেভেলপার সাপোর্ট"
     }
+
+    fun support(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ENGLISH -> "Support"
+        AppLanguage.BENGALI -> "সাপোর্ট"
+    }
 }

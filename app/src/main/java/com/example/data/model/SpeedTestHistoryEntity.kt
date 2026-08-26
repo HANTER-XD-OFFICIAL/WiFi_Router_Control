@@ -11,6 +11,8 @@ data class SpeedTestHistoryEntity(
     val pingMs: Long,
     val jitterMs: Long,
     val downloadMbps: Double,
+    val uploadMbps: Double = 0.0,
+    val testDurationSec: Int = 20,
     val ssid: String,
     val gatewayIp: String
 )
