@@ -9,8 +9,10 @@ import com.example.data.model.RouterEntity
 import com.example.data.model.SpeedTestHistoryEntity
 import com.example.data.repository.RouterRepository
 import com.example.network.CurrentWifiState
+import com.example.network.DeviceInfoHelper
 import com.example.network.DnsBenchmarker
 import com.example.network.DnsServerItem
+import com.example.network.HostDeviceInfo
 import com.example.network.LanDevice
 import com.example.network.LanScanner
 import com.example.network.NetworkHelper
@@ -72,6 +74,12 @@ class RouterViewModel(application: Application) : AndroidViewModel(application) 
 
     val speedHistory: StateFlow<List<SpeedTestHistoryEntity>> = repository.speedHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Host Device Info State
+    private val _hostDeviceInfo = MutableStateFlow(
+        DeviceInfoHelper.getHostDeviceInfo(getApplication())
+    )
+    val hostDeviceInfo: StateFlow<HostDeviceInfo> = _hostDeviceInfo.asStateFlow()
 
     // LAN Scanner State
     private val _scanProgress = MutableStateFlow(
