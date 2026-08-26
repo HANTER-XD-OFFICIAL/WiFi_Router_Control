@@ -8,19 +8,19 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
-import android.os.Build
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
 import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,10 +30,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,14 +43,19 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
@@ -68,12 +73,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,11 +88,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentOrange
+import com.example.ui.theme.AccentPurple
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.BorderSubtle
 import com.example.ui.theme.DarkNavyBg
@@ -98,6 +107,22 @@ import com.example.ui.theme.SurfaceNavy
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+/**
+ * JS Interface for capturing and auto-saving router credentials permanently
+ */
+class RouterAuthBridge(
+    private val onCredentialsCaptured: (user: String, pass: String) -> Unit
+) {
+    @JavascriptInterface
+    fun onLoginDetected(user: String, pass: String) {
+        if (pass.isNotBlank()) {
+            onCredentialsCaptured(user, pass)
+        }
+    }
+}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -106,9 +131,12 @@ fun RouterAdminWebScreen(
     adminUser: String,
     adminPass: String,
     onBack: () -> Unit,
+    onSaveCredentials: ((url: String, user: String, pass: String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     var currentUrl by remember { mutableStateOf(initialUrl) }
     var inputUrl by remember { mutableStateOf(initialUrl) }
     var pageTitle by remember { mutableStateOf("Router Admin Console") }
@@ -119,12 +147,31 @@ fun RouterAdminWebScreen(
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var showAddressEditor by remember { mutableStateOf(false) }
 
+    // Persistent Credentials State
+    var currentUser by remember { mutableStateOf(adminUser) }
+    var currentPass by remember { mutableStateOf(adminPass) }
+    var showCredentialsDialog by remember { mutableStateOf(false) }
+
     var hasLoadError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var showRemoteGuideDialog by remember { mutableStateOf(false) }
 
     val desktopUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     val mobileUserAgent = WebSettings.getDefaultUserAgent(context)
+
+    // Helper to perform multi-stage JS injection so SPA forms (LuCI, TP-Link, Vue) fill automatically
+    fun triggerAutoFillInjection(webView: WebView?, user: String, pass: String) {
+        if (webView == null || pass.isBlank()) return
+        injectRouterCredentials(webView, user, pass)
+        coroutineScope.launch {
+            delay(400)
+            injectRouterCredentials(webView, user, pass)
+            delay(1200)
+            injectRouterCredentials(webView, user, pass)
+            delay(2500)
+            injectRouterCredentials(webView, user, pass)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -212,10 +259,11 @@ fun RouterAdminWebScreen(
                             )
                         }
 
-                        // Auto-fill Credentials Button
+                        // Auto-fill & Remember Credentials Button
                         IconButton(
                             onClick = {
-                                injectRouterCredentials(webViewInstance, adminUser, adminPass)
+                                triggerAutoFillInjection(webViewInstance, currentUser, currentPass)
+                                Toast.makeText(context, "⚡ পাসওয়ার্ড অটো-ফিল করা হয়েছে!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
                                 .size(36.dp)
@@ -230,7 +278,20 @@ fun RouterAdminWebScreen(
                             )
                         }
 
-                        // Open in Chrome / Browser
+                        // Edit Credentials Button
+                        IconButton(
+                            onClick = { showCredentialsDialog = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Saved Credentials",
+                                tint = AccentGreen,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        // Open in Chrome / External Browser
                         IconButton(
                             onClick = {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(currentUrl))
@@ -283,6 +344,59 @@ fun RouterAdminWebScreen(
                     }
                 }
 
+                // Persistent Auto-Login Active Banner
+                if (currentPass.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = SurfaceElevated,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, AccentGreen.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(
+                                    imageVector = Icons.Default.FlashOn,
+                                    contentDescription = "Auto Login",
+                                    tint = AccentGreen,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Auto-Login সক্রিয়: পাসওয়ার্ড স্থায়ীভাবে সেভ আছে",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = AccentGreen,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    ),
+                                    maxLines = 1
+                                )
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    triggerAutoFillInjection(webViewInstance, currentUser, currentPass)
+                                    Toast.makeText(context, "ইনজেক্ট করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Text(
+                                    text = "Auto-Fill",
+                                    color = PrimaryCyan,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Loading Progress Bar
                 if (isLoading) {
                     Spacer(modifier = Modifier.height(6.dp))
@@ -327,8 +441,21 @@ fun RouterAdminWebScreen(
                             userAgentString = if (isDesktopMode) desktopUserAgent else mobileUserAgent
                         }
 
-                        CookieManager.getInstance().setAcceptCookie(true)
-                        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                        // Enable persistent cookies so session stays logged in indefinitely
+                        val cookieManager = CookieManager.getInstance()
+                        cookieManager.setAcceptCookie(true)
+                        cookieManager.setAcceptThirdPartyCookies(this, true)
+
+                        // Attach JavaScript Bridge to automatically detect & remember passwords
+                        addJavascriptInterface(
+                            RouterAuthBridge { capturedUser, capturedPass ->
+                                currentUser = capturedUser
+                                currentPass = capturedPass
+                                onSaveCredentials?.invoke(currentUrl, capturedUser, capturedPass)
+                                cookieManager.flush()
+                            },
+                            "AndroidRouterBridge"
+                        )
 
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -350,8 +477,11 @@ fun RouterAdminWebScreen(
                                     inputUrl = it
                                 }
                                 pageTitle = view?.title ?: "Router Admin"
-                                // Attempt auto-fill on page load
-                                injectRouterCredentials(view, adminUser, adminPass)
+
+                                // Multi-stage JavaScript Auto-Fill & Auto-Capture listener attachment
+                                triggerAutoFillInjection(view, currentUser, currentPass)
+                                attachFormAutoSaveListener(view)
+                                cookieManager.flush()
                             }
 
                             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
@@ -448,54 +578,63 @@ fun RouterAdminWebScreen(
                                     color = TextSecondary,
                                     lineHeight = 18.sp
                                 ),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                modifier = Modifier.padding(horizontal = 8.dp)
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Action: Enter Remote URL
-                            OutlinedTextField(
-                                value = inputUrl,
-                                onValueChange = { inputUrl = it },
-                                label = { Text("Remote DDNS / Cloud URL বা WAN IP") },
-                                placeholder = { Text("e.g. http://mycudy.duckdns.org:8080/cgi-bin/luci/") },
+                            // Quick Alternatives
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = PrimaryCyan,
-                                    unfocusedBorderColor = BorderSubtle,
-                                    focusedContainerColor = SurfaceElevated,
-                                    unfocusedContainerColor = SurfaceElevated
-                                )
-                            )
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        val cudyUrl = "http://192.168.10.1/cgi-bin/luci/"
+                                        currentUrl = cudyUrl
+                                        inputUrl = cudyUrl
+                                        hasLoadError = false
+                                        webViewInstance?.loadUrl(cudyUrl)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                ) {
+                                    Icon(Icons.Default.Router, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Cudy (192.168.10.1/luci) চেষ্টা করুন")
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        showRemoteGuideDialog = true
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryCyan)
+                                ) {
+                                    Icon(Icons.Default.CloudDone, contentDescription = null, tint = PrimaryCyan, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("দূরবর্তী নেটওয়ার্ক থেকে এক্সেস নির্দেশিকা", color = PrimaryCyan)
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 OutlinedButton(
-                                    onClick = { showRemoteGuideDialog = true },
+                                    onClick = onBack,
                                     modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryCyan),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryCyan.copy(alpha = 0.5f))
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Icon(Icons.Default.HelpOutline, contentDescription = "Guide", modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("সেটআপ গাইড", fontSize = 12.sp)
+                                    Text("ফিরে যান", fontSize = 12.sp)
                                 }
 
                                 Button(
                                     onClick = {
-                                        var target = inputUrl.trim()
-                                        if (!target.startsWith("http://") && !target.startsWith("https://")) {
-                                            target = "http://$target"
-                                        }
-                                        currentUrl = target
                                         hasLoadError = false
-                                        webViewInstance?.loadUrl(target)
+                                        webViewInstance?.reload()
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
@@ -510,6 +649,81 @@ fun RouterAdminWebScreen(
                     }
                 }
             }
+        }
+
+        // Edit Saved Credentials Dialog
+        if (showCredentialsDialog) {
+            var tempUser by remember { mutableStateOf(currentUser) }
+            var tempPass by remember { mutableStateOf(currentPass) }
+            var showPassText by remember { mutableStateOf(false) }
+
+            AlertDialog(
+                onDismissRequest = { showCredentialsDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Key, contentDescription = null, tint = PrimaryCyan, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("রাউটার লগইন পাসওয়ার্ড সংরক্ষণ")
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "এখানে পাসওয়ার্ড সেট করলে অ্যাপে আজীবনের জন্য সংরক্ষিত থাকবে এবং পরবর্তীতে কোনো পাসওয়ার্ড ছাড়াই অটো-লগইন হবে।",
+                            style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 16.sp)
+                        )
+
+                        OutlinedTextField(
+                            value = tempUser,
+                            onValueChange = { tempUser = it },
+                            label = { Text("Username") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = tempPass,
+                            onValueChange = { tempPass = it },
+                            label = { Text("Admin Password / PIN") },
+                            singleLine = true,
+                            visualTransformation = if (showPassText) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showPassText = !showPassText }) {
+                                    Icon(
+                                        imageVector = if (showPassText) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "Toggle Pass",
+                                        tint = TextSecondary
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            currentUser = tempUser
+                            currentPass = tempPass
+                            onSaveCredentials?.invoke(currentUrl, tempUser, tempPass)
+                            triggerAutoFillInjection(webViewInstance, tempUser, tempPass)
+                            showCredentialsDialog = false
+                            Toast.makeText(context, "🔐 পাসওয়ার্ড চিরতরে সেভ করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF00222B))
+                    ) {
+                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Save & Auto-Fill", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCredentialsDialog = false }) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = SurfaceNavy
+            )
         }
 
         // Remote Access Setup Guide Dialog
@@ -633,31 +847,83 @@ fun RouterAdminWebScreen(
 }
 
 /**
- * JavaScript injection helper for auto-filling router username & password fields
+ * JavaScript injection helper for auto-filling router username & password fields across LuCI, TP-Link, Tenda, Netgear, ZTE, Huawei
  */
 private fun injectRouterCredentials(webView: WebView?, user: String, pass: String) {
-    if (webView == null || user.isBlank()) return
+    if (webView == null || pass.isBlank()) return
+    val sanitizedPass = pass.replace("\\", "\\\\").replace("\"", "\\\"")
+    val sanitizedUser = user.replace("\\", "\\\\").replace("\"", "\\\"")
+
     val script = """
         (function() {
             try {
-                var userInputs = document.querySelectorAll('input[type="text"], input[name*="user"], input[name*="name"], input[id*="user"], input[id*="login"]');
-                var passInputs = document.querySelectorAll('input[type="password"], input[name*="pass"], input[id*="pass"], input[id*="pwd"]');
+                var u = "$sanitizedUser";
+                var p = "$sanitizedPass";
                 
-                if (userInputs.length > 0 && "$user" !== "") {
-                    userInputs[0].value = "$user";
-                    userInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    userInputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+                // Target username inputs
+                var userInputs = document.querySelectorAll('input[type="text"], input[name*="user"], input[name*="name"], input[id*="user"], input[id*="login"], input[name="luci_username"]');
+                // Target password inputs
+                var passInputs = document.querySelectorAll('input[type="password"], input[name*="pass"], input[name*="pwd"], input[id*="pass"], input[id*="pwd"], input[name="luci_password"], #focus_password, #pc-login-password, #login-password');
+                
+                if (userInputs.length > 0 && u !== "") {
+                    for (var i = 0; i < userInputs.length; i++) {
+                        userInputs[i].value = u;
+                        userInputs[i].dispatchEvent(new Event('input', { bubbles: true }));
+                        userInputs[i].dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 }
                 
-                if (passInputs.length > 0 && "$pass" !== "") {
-                    passInputs[0].value = "$pass";
-                    passInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    passInputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+                if (passInputs.length > 0 && p !== "") {
+                    for (var j = 0; j < passInputs.length; j++) {
+                        passInputs[j].value = p;
+                        passInputs[j].dispatchEvent(new Event('input', { bubbles: true }));
+                        passInputs[j].dispatchEvent(new Event('change', { bubbles: true }));
+                        passInputs[j].dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+                    }
                 }
             } catch(e) {}
         })();
     """.trimIndent()
 
+    webView.evaluateJavascript(script, null)
+}
+
+/**
+ * Attaches real-time listeners so if user enters password, the app captures it and permanently remembers it!
+ */
+private fun attachFormAutoSaveListener(webView: WebView?) {
+    if (webView == null) return
+    val script = """
+        (function() {
+            try {
+                function reportLogin() {
+                    var userInp = document.querySelector('input[type="text"], input[name*="user"], input[name*="name"], input[id*="user"], input[id*="login"], input[name="luci_username"]');
+                    var passInp = document.querySelector('input[type="password"], input[name*="pass"], input[name*="pwd"], input[id*="pass"], input[id*="pwd"], input[name="luci_password"], #focus_password, #pc-login-password, #login-password');
+                    var u = userInp ? userInp.value : 'admin';
+                    var p = passInp ? passInp.value : '';
+                    if (p && window.AndroidRouterBridge) {
+                        window.AndroidRouterBridge.onLoginDetected(u, p);
+                    }
+                }
+                
+                var forms = document.querySelectorAll('form');
+                forms.forEach(function(f) {
+                    f.addEventListener('submit', function() { reportLogin(); });
+                });
+                
+                var buttons = document.querySelectorAll('button, input[type="submit"], input[type="button"], .cbi-button-apply, .btn, #login-btn, #sub');
+                buttons.forEach(function(b) {
+                    b.addEventListener('click', function() { reportLogin(); });
+                });
+                
+                var passInputs = document.querySelectorAll('input[type="password"]');
+                passInputs.forEach(function(p) {
+                    p.addEventListener('change', function() { reportLogin(); });
+                    p.addEventListener('blur', function() { reportLogin(); });
+                });
+            } catch(e) {}
+        })();
+    """.trimIndent()
     webView.evaluateJavascript(script, null)
 }
 

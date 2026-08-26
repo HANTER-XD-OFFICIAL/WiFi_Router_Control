@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.ui.components.DeveloperSupportBottomSheet
 import com.example.ui.components.TopNetworkAppBar
+import com.example.ui.components.WelcomeNoticeDialog
 import com.example.ui.screens.ConnectedDevicesScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.DiagnosticsToolsScreen
@@ -88,6 +89,7 @@ fun MainApp(viewModel: RouterViewModel) {
 
     // App Loading / Splash Screen State
     var isAppLoading by remember { mutableStateOf(true) }
+    var showWelcomeDialog by remember { mutableStateOf(false) }
     var showDeveloperSupportSheet by remember { mutableStateOf(false) }
 
     // Collect States
@@ -149,7 +151,10 @@ fun MainApp(viewModel: RouterViewModel) {
     ) { loading ->
         if (loading) {
             SplashScreen(
-                onFinished = { isAppLoading = false }
+                onFinished = {
+                    isAppLoading = false
+                    showWelcomeDialog = true // Display Welcome Dialog right after Splash completes
+                }
             )
         } else {
             Scaffold(
@@ -309,9 +314,19 @@ fun MainApp(viewModel: RouterViewModel) {
                             initialUrl = activeAdminUrl,
                             adminUser = activeAdminUser,
                             adminPass = activeAdminPass,
-                            onBack = { currentScreen = 0 }
+                            onBack = { currentScreen = 0 },
+                            onSaveCredentials = { url, user, pass ->
+                                viewModel.saveCredentialsForRouter(url, user, pass)
+                            }
                         )
                     }
+                }
+
+                // Welcome / Overview Notice Dialog
+                if (showWelcomeDialog) {
+                    WelcomeNoticeDialog(
+                        onDismiss = { showWelcomeDialog = false }
+                    )
                 }
 
                 // Developer Support Bottom Sheet

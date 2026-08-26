@@ -212,8 +212,84 @@ class RouterViewModel(application: Application) : AndroidViewModel(application) 
             cleanUrl = "http://$cleanUrl"
         }
         _activeAdminUrl.value = cleanUrl
-        _activeAdminUser.value = user
+
+        // If user didn't specify custom pass, check local database for saved password for this host
+        viewModelScope.launch(Dispatchers.IO) {
+            val host = extractHostFromUrl(cleanUrl)
+            val prefs = getApplication<Application>().getSharedPreferences("router_credentials", android.content.Context.MODE_PRIVATE)
+            val cachedPass = prefs.getString("pass_$host", null)
+            val cachedUser = prefs.getString("user_$host", null)
+
+            if (!cachedPass.isNullOrBlank()) {
+                _activeAdminUser.value = cachedUser ?: user
+                _activeAdminPass.value = cachedPass
+            } else {
+                val dbRouter = repository.getRouterByIp(host)
+                if (dbRouter != null && dbRouter.password.isNotBlank()) {
+                    _activeAdminUser.value = dbRouter.username
+                    _activeAdminPass.value = dbRouter.password
+                } else {
+                    _activeAdminUser.value = user
+                    _activeAdminPass.value = pass
+                }
+            }
+        }
+    }
+
+    /**
+     * Persist router credentials permanently so user never has to enter password again.
+     */
+    fun saveCredentialsForRouter(urlOrHost: String, user: String, pass: String) {
+        if (pass.isBlank()) return
+        val host = extractHostFromUrl(urlOrHost)
+        val context = getApplication<Application>()
+
+        // 1. Save synchronously to SharedPreferences for instant retrieval
+        val prefs = context.getSharedPreferences("router_credentials", android.content.Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("user_$host", user.ifBlank { "admin" })
+            .putString("pass_$host", pass)
+            .apply()
+
+        _activeAdminUser.value = user.ifBlank { "admin" }
         _activeAdminPass.value = pass
+
+        // 2. Save / Update in Room Database
+        viewModelScope.launch(Dispatchers.IO) {
+            val existing = repository.getRouterByIp(host)
+            if (existing != null) {
+                repository.updateRouter(
+                    existing.copy(
+                        username = user.ifBlank { existing.username },
+                        password = pass,
+                        lastAccessedTime = System.currentTimeMillis()
+                    )
+                )
+            } else {
+                val brand = RouterPresets.guessBrandByGateway(host)
+                val newRouter = RouterEntity(
+                    name = "$brand Router ($host)",
+                    brand = brand,
+                    ipOrHostname = host,
+                    username = user.ifBlank { "admin" },
+                    password = pass,
+                    isRemoteBound = !host.startsWith("192.168.") && !host.startsWith("10.") && !host.startsWith("172."),
+                    remoteDnsUrl = if (!host.startsWith("192.168.")) "http://$host" else "",
+                    lastAccessedTime = System.currentTimeMillis()
+                )
+                repository.saveRouter(newRouter)
+            }
+        }
+    }
+
+    private fun extractHostFromUrl(url: String): String {
+        return try {
+            val clean = url.removePrefix("http://").removePrefix("https://")
+            val hostPort = clean.split("/")[0]
+            hostPort.split(":")[0]
+        } catch (e: Exception) {
+            url
+        }
     }
 
     // Device Scanner
