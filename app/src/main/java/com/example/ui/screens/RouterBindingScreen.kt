@@ -379,20 +379,20 @@ fun RouterBindingScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CloudDone, contentDescription = null, tint = PrimaryCyan, modifier = Modifier.size(22.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("রিমোট ক্লাউড লিঙ্ক সেটআপ (${router.name})", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("Remote Cloud Link Setup (${router.name})", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 }
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "ঘরের বাইরে বা যেকোনো ইন্টারনেট (মোবাইল ডাটা) থেকে এই রাউটারটি কন্ট্রোল করতে আপনার DDNS ডোমেইন (যেমন DuckDNS/No-IP/Cudy Cloud) বা পাবলিক WAN IP দিন:",
+                        text = "To manage and control this router remotely from mobile data or outside your home, enter your DDNS Domain (DuckDNS / No-IP / Cudy Cloud) or Public WAN IP / ISP Router address:",
                         style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 18.sp)
                     )
 
                     OutlinedTextField(
                         value = remoteInput,
                         onValueChange = { remoteInput = it },
-                        label = { Text("Remote URL / DDNS Domain") },
+                        label = { Text("Remote URL / DDNS Domain / ISP IP") },
                         placeholder = { Text("e.g. http://mycudy.duckdns.org:8080/cgi-bin/luci/") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -409,11 +409,11 @@ fun RouterBindingScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text(
-                                text = "💡 টিপস:",
+                                text = "💡 ISP & Remote Access Tip:",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = PrimaryCyan)
                             )
                             Text(
-                                text = "রাউটারের ভেতরে DDNS (Dynamic DNS) চালু করে ফ্রি DuckDNS বা Cudy Cloud ব্যবহার করতে পারেন।",
+                                text = "For routers under the same ISP or WAN subnet, enter the router's WAN IP and remote management port (e.g. 10.x.x.x:8080 or public IP:port). Enable Dynamic DNS or Remote Web Management in the router settings.",
                                 style = MaterialTheme.typography.labelSmall.copy(color = TextMuted)
                             )
                         }
@@ -445,12 +445,12 @@ fun RouterBindingScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF00222B))
                 ) {
-                    Text("সেভ করুন (Save)", fontWeight = FontWeight.Bold)
+                    Text("Save", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { routerToConfigureRemote = null }) {
-                    Text("বাতিল", color = TextSecondary)
+                    Text("Cancel", color = TextSecondary)
                 }
             },
             containerColor = SurfaceNavy

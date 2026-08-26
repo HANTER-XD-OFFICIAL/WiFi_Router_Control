@@ -154,7 +154,7 @@ fun WelcomeNoticeDialog(
                                     )
                                 )
                                 Text(
-                                    text = "স্মার্ট ওয়াইফাই ও রাউটার কন্ট্রোল",
+                                    text = "Smart WiFi & Router Control Suite",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = PrimaryCyan,
                                         fontWeight = FontWeight.SemiBold
@@ -206,7 +206,7 @@ fun WelcomeNoticeDialog(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "স্বাগতম! (Welcome to the App)",
+                                        text = "Welcome to WiFi Router Manager",
                                         style = MaterialTheme.typography.titleSmall.copy(
                                             fontWeight = FontWeight.Bold,
                                             color = TextPrimary
@@ -215,7 +215,7 @@ fun WelcomeNoticeDialog(
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "আমাদের ওয়াইফাই ও রাউটার ম্যানেজমেন্ট সিস্টেমে আপনাকে স্বাগতম! অ্যাপটি ব্যবহারের মাধ্যমে আপনার যেকোনো ব্র্যান্ডের রাউটার পরিচালনা করা এখন আরও সহজ ও সুরক্ষিত।",
+                                    text = "Welcome to the ultimate router administration and WiFi diagnostic application. Manage and control your router easily, securely, and seamlessly with permanent auto-login and remote ISP capabilities.",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = TextSecondary,
                                         lineHeight = 19.sp
@@ -254,7 +254,7 @@ fun WelcomeNoticeDialog(
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "ডেভেলপার: $DEV_NAME",
+                                            text = "Developer: $DEV_NAME",
                                             style = MaterialTheme.typography.labelMedium.copy(
                                                 fontWeight = FontWeight.Bold,
                                                 color = TextPrimary
@@ -276,7 +276,7 @@ fun WelcomeNoticeDialog(
                             }
                         }
 
-                        // Section 1: অ্যাপের সেরা সুবিধাসমূহ (What can be done)
+                        // Section 1: Features
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -287,7 +287,7 @@ fun WelcomeNoticeDialog(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "অ্যাপের মূল সুবিধাসমূহ (Features):",
+                                    text = "Core Features & Highlights:",
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = AccentGreen
@@ -297,36 +297,36 @@ fun WelcomeNoticeDialog(
 
                             FeatureBullet(
                                 icon = Icons.Default.Key,
-                                title = "১. পাসওয়ার্ডলেস অটো-লগইন (Auto-Login):",
-                                desc = "একবার রাউটারে অ্যাডমিন পাসওয়ার্ড দিয়ে ঢুকলে অ্যাপটি তা মনে রাখবে। পরবর্তীতে পাসওয়ার্ড ছাড়াই সরাসরি অ্যাডমিন প্যানেল চালু হবে।"
+                                title = "1. Passwordless Auto-Login:",
+                                desc = "Enter your router password once and the app securely remembers it permanently. Never re-type passwords again."
                             )
 
                             FeatureBullet(
                                 icon = Icons.Default.CloudDone,
-                                title = "২. রিমোট ক্লাউড এক্সেস (Anywhere Control):",
-                                desc = "ঘরের বাইরে থাকলে বা মোবাইল ডাটায় থাকলেও DDNS ডোমেইন ও ক্লাউড লিঙ্কের মাধ্যমে সরাসরি রাউটার কন্ট্রোল করা যায়।"
+                                title = "2. ISP-Wide & Remote Cloud Access:",
+                                desc = "Access routers across the same ISP subnet or worldwide via DDNS domains, WAN IPs, and cloud tunnels from mobile data."
                             )
 
                             FeatureBullet(
                                 icon = Icons.Default.Devices,
-                                title = "৩. কানেক্টেড ডিভাইস স্ক্যানার:",
-                                desc = "আপনার ওয়াইফাইতে কে কে কানেক্টেড আছে তা লাইভ দেখুন, নাম সেভ করুন এবং প্রয়োজনে ম্যানেজ করুন।"
+                                title = "3. Connected Devices & IP Scanner:",
+                                desc = "Real-time subnet scanner detects all connected devices, open ports, ping latencies, and device types."
                             )
 
                             FeatureBullet(
                                 icon = Icons.Default.Speed,
-                                title = "৪. ইন্টারনেট স্পিড ও পিং ডায়াগনস্টিকস:",
-                                desc = "রিয়েল-টাইম গেটওয়ে পিং ল্যাটেন্সি ও স্পিড টেস্ট করে নেটওয়ার্কের মান যাচাই করুন।"
+                                title = "4. Network Diagnostics & Ping Monitor:",
+                                desc = "Test gateway latency, packet loss, DNS resolution, and connection stability in real time."
                             )
 
                             FeatureBullet(
                                 icon = Icons.Default.Router,
-                                title = "৫. সকল ব্র্যান্ড সাপোর্ট:",
-                                desc = "Cudy (OpenWrt LuCI), TP-Link, Tenda, Netgear, Xiaomi, MikroTik, D-Link সহ সব রাউটার কনসোল নিয়ন্ত্রণের সুবিধা।"
+                                title = "5. Multi-Brand Support:",
+                                desc = "Pre-configured presets and direct web consoles for Cudy (OpenWrt LuCI), TP-Link, Tenda, Netgear, MikroTik, ZTE, and more."
                             )
                         }
 
-                        // Section 2: ব্যবহারের সতর্কতা ও সীমাবদ্ধতা (Important Safety Guidelines)
+                        // Section 2: Important Guidelines
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -337,7 +337,7 @@ fun WelcomeNoticeDialog(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "ব্যবহারের সতর্কতা ও নির্দেশিকা:",
+                                    text = "Important Guidelines:",
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontWeight = FontWeight.Bold,
                                         color = AccentOrange
@@ -346,18 +346,18 @@ fun WelcomeNoticeDialog(
                             }
 
                             SafetyBullet(
-                                title = "• লোকাল আইপি এক্সেস:",
-                                desc = "লোকাল গেটওয়ে (যেমন 192.168.10.1) শুধুমাত্র সংশ্লিষ্ট ওয়াইফাই নেটওয়ার্কে কানেক্টেড থাকা অবস্থায় কাজ করে।"
+                                title = "• Local Gateway Access:",
+                                desc = "Local IPs (e.g. 192.168.10.1) are reachable only while connected directly to that router's local Wi-Fi."
                             )
 
                             SafetyBullet(
-                                title = "• রিমোট এক্সেস চালু:",
-                                desc = "মোবাইল ডাটা থেকে এক্সেস করতে রাউটারে DDNS (DuckDNS/No-IP) বা WAN রিমোট পোর্ট এক্সেস অন থাকতে হবে।"
+                                title = "• Cross-Router & ISP Remote Access:",
+                                desc = "To manage other routers under the same ISP or from mobile data, ensure Remote Web Management is enabled on their WAN IP or Dynamic DNS is active."
                             )
 
                             SafetyBullet(
-                                title = "• রাউটার রিবুট ও ফার্মওয়্যার:",
-                                desc = "ফার্মওয়্যার আপগ্রেড বা কনফিগ পরিবর্তনের সময় রাউটারের বিদ্যুৎ ও কানেকশন বিচ্ছিন্ন করবেন না।"
+                                title = "• Firmware & Power Safety:",
+                                desc = "Do not disconnect power or network cables while applying firmware updates or critical router configurations."
                             )
                         }
                     }
@@ -437,7 +437,7 @@ fun WelcomeNoticeDialog(
                             )
                         ) {
                             Text(
-                                text = "অ্যাপে প্রবেশ করুন (Continue)",
+                                text = "Continue to App",
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 14.sp
                             )

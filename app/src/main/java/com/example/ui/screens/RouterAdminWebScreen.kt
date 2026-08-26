@@ -263,7 +263,7 @@ fun RouterAdminWebScreen(
                         IconButton(
                             onClick = {
                                 triggerAutoFillInjection(webViewInstance, currentUser, currentPass)
-                                Toast.makeText(context, "⚡ পাসওয়ার্ড অটো-ফিল করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "⚡ Credentials auto-filled!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
                                 .size(36.dp)
@@ -369,7 +369,7 @@ fun RouterAdminWebScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Auto-Login সক্রিয়: পাসওয়ার্ড স্থায়ীভাবে সেভ আছে",
+                                    text = "Auto-Login Active: Password permanently saved",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = AccentGreen,
                                         fontWeight = FontWeight.Bold,
@@ -382,7 +382,7 @@ fun RouterAdminWebScreen(
                             TextButton(
                                 onClick = {
                                     triggerAutoFillInjection(webViewInstance, currentUser, currentPass)
-                                    Toast.makeText(context, "ইনজেক্ট করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Injected successfully!", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.height(28.dp)
                             ) {
@@ -563,7 +563,7 @@ fun RouterAdminWebScreen(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             Text(
-                                text = "রাউটারে কানেক্ট করা যাচ্ছে না",
+                                text = "Unable to Connect to Router",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
@@ -573,7 +573,7 @@ fun RouterAdminWebScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "আপনি হয়তো এই রাউটারের লোকাল ওয়াইফাইতে নেই। লোকাল আইপি (যেমন 192.168.10.1 বা 192.168.0.1) শুধুমাত্র একই ওয়াইফাই নেটওয়ার্কে কাজ করে। অন্য যেকোনো নেটওয়ার্ক বা মোবাইল ডাটা থেকে ঢুকতে Remote DDNS / Cloud Domain বা Cudy Cloud URL ব্যবহার করুন।",
+                                text = "You may not be connected to this router's local Wi-Fi. Local gateway addresses (e.g. 192.168.10.1 or 192.168.0.1) only work within the local network. To access other routers across your ISP subnet or over mobile data, configure the Remote DDNS / WAN IP or Cloud URL.",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     color = TextSecondary,
                                     lineHeight = 18.sp
@@ -601,7 +601,7 @@ fun RouterAdminWebScreen(
                                 ) {
                                     Icon(Icons.Default.Router, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Cudy (192.168.10.1/luci) চেষ্টা করুন")
+                                    Text("Try Cudy (192.168.10.1/luci)")
                                 }
 
                                 OutlinedButton(
@@ -613,7 +613,7 @@ fun RouterAdminWebScreen(
                                 ) {
                                     Icon(Icons.Default.CloudDone, contentDescription = null, tint = PrimaryCyan, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("দূরবর্তী নেটওয়ার্ক থেকে এক্সেস নির্দেশিকা", color = PrimaryCyan)
+                                    Text("Remote & ISP Access Guide", color = PrimaryCyan)
                                 }
                             }
 
@@ -628,7 +628,7 @@ fun RouterAdminWebScreen(
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("ফিরে যান", fontSize = 12.sp)
+                                    Text("Go Back", fontSize = 12.sp)
                                 }
 
                                 Button(
@@ -642,7 +642,7 @@ fun RouterAdminWebScreen(
                                 ) {
                                     Icon(Icons.Default.Refresh, contentDescription = "Retry", modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("কানেক্ট করুন", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Text("Retry Connect", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -663,13 +663,13 @@ fun RouterAdminWebScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Key, contentDescription = null, tint = PrimaryCyan, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("রাউটার লগইন পাসওয়ার্ড সংরক্ষণ")
+                        Text("Save Router Credentials")
                     }
                 },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = "এখানে পাসওয়ার্ড সেট করলে অ্যাপে আজীবনের জন্য সংরক্ষিত থাকবে এবং পরবর্তীতে কোনো পাসওয়ার্ড ছাড়াই অটো-লগইন হবে।",
+                            text = "Saving your credentials securely on your device enables automatic auto-login every time without needing to type passwords again.",
                             style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 16.sp)
                         )
 
@@ -708,7 +708,7 @@ fun RouterAdminWebScreen(
                             onSaveCredentials?.invoke(currentUrl, tempUser, tempPass)
                             triggerAutoFillInjection(webViewInstance, tempUser, tempPass)
                             showCredentialsDialog = false
-                            Toast.makeText(context, "🔐 পাসওয়ার্ড চিরতরে সেভ করা হয়েছে!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "🔐 Credentials saved permanently!", Toast.LENGTH_SHORT).show()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF00222B))
                     ) {
@@ -734,7 +734,7 @@ fun RouterAdminWebScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CloudDone, contentDescription = null, tint = PrimaryCyan, modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("দূরবর্তী নেটওয়ার্ক থেকে রাউটার কন্ট্রোল সেটআপ")
+                        Text("Remote & ISP-Wide Router Access Guide")
                     }
                 },
                 text = {
@@ -743,7 +743,7 @@ fun RouterAdminWebScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "যেকোনো দেশ বা যেকোনো নেটওয়ার্ক (মোবাইল ডাটা / বাইরের ওয়াইফাই) থেকে আপনার রাউটারে এক্সেস করার ধাপসমূহ:",
+                            text = "Access and manage routers remotely across your ISP network or mobile data:",
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = TextPrimary)
                         )
 
@@ -753,12 +753,12 @@ fun RouterAdminWebScreen(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = "🌐 Cudy Router / OpenWrt LuCI এর ক্ষেত্রে:",
+                                    text = "🌐 Cudy Router / OpenWrt LuCI & Web Portals:",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = PrimaryCyan)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "১. প্রথমে রাউটারের ওয়াইফাইতে কানেক্ট করে http://192.168.10.1/cgi-bin/luci/ তে লগইন করুন।\n২. Network > Firewall > Traffic Rules-এ গিয়ে WAN-to-Device (Port 80/443 বা 8080) Allow করুন।\n৩. Services > Dynamic DNS (DDNS)-এ গিয়ে DuckDNS বা No-IP হোস্টনেইম যোগ করুন (যেমন: yourname.duckdns.org)।\n৪. এই অ্যাপে সেই হোস্টনেইম সেভ করে যেকোনো স্থান থেকে কন্ট্রোল করুন!",
+                                    text = "1. Connect to local Wi-Fi and open http://192.168.10.1/cgi-bin/luci/.\n2. In Network > Firewall > Traffic Rules / Remote Management, enable WAN access (e.g. port 8080/8443).\n3. Under Services > Dynamic DNS (DDNS), set up DuckDNS or No-IP (e.g. router.duckdns.org).\n4. In this app, save the WAN IP / DDNS link to manage it anytime!",
                                     style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 17.sp)
                                 )
                             }
@@ -770,12 +770,12 @@ fun RouterAdminWebScreen(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = "🔒 VPN / Cudy Cloud পদ্ধতি (সবচেয়ে নিরাপদ):",
+                                    text = "🔒 ISP Subnet & VPN Access (Recommended):",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = AccentGreen)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "রাউটারে Tailscale, WireGuard বা Cudy Cloud অ্যাকাউন্ট চালু করে রাখলে বিশ্বব্যাপী যেকোনো স্থান থেকে রিমোট কন্ট্রোল করা যায়।",
+                                    text = "Under the same ISP, routers with Remote Web Management enabled on their WAN IP (e.g. 10.x.x.x:8080) or WireGuard / Tailscale mesh VPN can be directly accessed and controlled without needing to be on their local Wi-Fi.",
                                     style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 17.sp)
                                 )
                             }
@@ -787,7 +787,7 @@ fun RouterAdminWebScreen(
                         onClick = { showRemoteGuideDialog = false },
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF00222B))
                     ) {
-                        Text("বুঝেছি (Close)", fontWeight = FontWeight.Bold)
+                        Text("Close", fontWeight = FontWeight.Bold)
                     }
                 },
                 containerColor = SurfaceNavy
