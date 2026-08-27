@@ -296,7 +296,7 @@ fun SpeedTestTab(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "PRECISION 20-SEC SPEEDOMETER",
+                                text = "20s DL + 20s UL SPEEDOMETER",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = PrimaryCyan,
@@ -311,7 +311,7 @@ fun SpeedTestTab(
                         ) {
                             if (isTestingActive) {
                                 StatusPill(
-                                    text = "${speedState.secondsRemaining}s left",
+                                    text = "${speedState.phaseSecondsRemaining}s phase",
                                     color = AccentOrange
                                 )
                             }
@@ -615,7 +615,12 @@ fun SpeedTestTab(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Running 20s Test (${speedState.secondsRemaining}s remaining)...",
+                                text = when (speedState.stage) {
+                                    SpeedStage.PINGING -> "Ping Check (${speedState.phaseSecondsRemaining}s left)..."
+                                    SpeedStage.DOWNLOADING -> "20s Download Test (${speedState.phaseSecondsRemaining}s left)..."
+                                    SpeedStage.UPLOADING -> "20s Upload Test (${speedState.phaseSecondsRemaining}s left)..."
+                                    else -> "Running Speed Test (${speedState.secondsRemaining}s total left)..."
+                                },
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
                             )
                         } else {
@@ -626,7 +631,7 @@ fun SpeedTestTab(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Run 20-Second Precision Speed Test",
+                                text = "Run 20s Download + 20s Upload Test",
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold)
                             )
                         }

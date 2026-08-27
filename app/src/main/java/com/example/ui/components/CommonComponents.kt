@@ -82,7 +82,6 @@ fun TopNetworkAppBar(
     ssid: String,
     isConnected: Boolean,
     onRefresh: () -> Unit,
-    onOpenSupport: () -> Unit,
     onOpenLanguage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -111,26 +110,29 @@ fun TopNetworkAppBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
                 // Live Glowing Animated Router Icon
                 Box(
-                    modifier = Modifier.size(46.dp),
+                    modifier = Modifier.size(44.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isConnected) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(42.dp)
                                 .scale(pulseScale)
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(13.dp))
                                 .background(PrimaryCyan.copy(alpha = 0.15f))
                         )
                     }
 
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
-                            .clip(RoundedCornerShape(13.dp))
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
                             .background(
                                 Brush.linearGradient(
                                     listOf(
@@ -142,7 +144,7 @@ fun TopNetworkAppBar(
                             .border(
                                 1.5.dp,
                                 Brush.linearGradient(listOf(PrimaryCyan, PrimaryBlue)),
-                                RoundedCornerShape(13.dp)
+                                RoundedCornerShape(12.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -150,36 +152,37 @@ fun TopNetworkAppBar(
                             imageVector = if (isConnected) Icons.Default.Router else Icons.Default.WifiOff,
                             contentDescription = "Router Icon",
                             tint = if (isConnected) PrimaryCyan else AccentRed,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = TextPrimary,
-                            fontSize = 17.sp,
-                            letterSpacing = 0.5.sp
-                        )
+                            fontSize = 16.sp,
+                            letterSpacing = 0.4.sp
+                        ),
+                        maxLines = 1
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(7.dp)
                                 .clip(CircleShape)
                                 .background(if (isConnected) AccentGreen else AccentRed)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = if (isConnected) ssid else "Offline / Disconnected",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 color = if (isConnected) AccentGreen else TextMuted,
-                                fontSize = 12.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold
                             ),
                             maxLines = 1
@@ -188,51 +191,34 @@ fun TopNetworkAppBar(
                 }
             }
 
+            // Top Actions: Exactly 2 options (Language & Refresh) to ensure crystal clear visibility and no screen clipping
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Language Selection Button
+                // 1. Language Selection Button
                 IconButton(
                     onClick = onOpenLanguage,
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(SurfaceElevated)
-                        .border(1.dp, PrimaryCyan.copy(alpha = 0.35f), CircleShape)
+                        .border(1.dp, PrimaryCyan.copy(alpha = 0.4f), CircleShape)
                         .testTag("language_switch_top_btn")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Language,
                         contentDescription = "Language",
                         tint = PrimaryCyan,
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                // Developer Support Direct Button
-                IconButton(
-                    onClick = onOpenSupport,
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(SurfaceElevated)
-                        .border(1.dp, PrimaryCyan.copy(alpha = 0.35f), CircleShape)
-                        .testTag("dev_support_top_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SupportAgent,
-                        contentDescription = "Developer Support",
-                        tint = PrimaryCyan,
-                        modifier = Modifier.size(19.dp)
-                    )
-                }
-
-                // Refresh Button
+                // 2. Refresh Network Status Button
                 IconButton(
                     onClick = onRefresh,
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(SurfaceElevated)
                         .border(1.dp, BorderSubtle, CircleShape)
@@ -242,7 +228,7 @@ fun TopNetworkAppBar(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh",
                         tint = PrimaryCyan,
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

@@ -30,7 +30,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudQueue
@@ -38,7 +40,9 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Security
@@ -75,6 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.RouterEntity
 import com.example.network.CurrentWifiState
+import com.example.network.HostDeviceInfo
 import com.example.ui.components.DeveloperSupportQuickCard
 import com.example.ui.components.SignalQualityIndicator
 import com.example.ui.components.StatusPill
@@ -102,6 +107,7 @@ import com.example.ui.theme.TextSecondary
 fun DashboardScreen(
     wifiState: CurrentWifiState,
     boundRouters: List<RouterEntity>,
+    hostDeviceInfo: HostDeviceInfo? = null,
     onOpenAdmin: (url: String, user: String, pass: String) -> Unit,
     onNavigateToBinding: () -> Unit,
     onNavigateToDevices: () -> Unit,
@@ -612,6 +618,128 @@ fun DashboardScreen(
                     SpecRow(label = "Secondary DNS Server", value = wifiState.dns2, onCopy = { copyText(context, wifiState.dns2) })
                     SpecRow(label = "Access Point BSSID", value = wifiState.bssid, onCopy = { copyText(context, wifiState.bssid) })
                     SpecRow(label = "Physical Link Speed", value = "${wifiState.linkSpeedMbps} Mbps", onCopy = null)
+                }
+            }
+        }
+
+        // Host Android Device Specifications Card
+        if (hostDeviceInfo != null) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            1.dp,
+                            Brush.linearGradient(
+                                listOf(
+                                    AccentGreen.copy(alpha = 0.4f),
+                                    PrimaryCyan.copy(alpha = 0.3f),
+                                    SurfaceNavy
+                                )
+                            ),
+                            RoundedCornerShape(20.dp)
+                        ),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceNavy)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        AccentGreen.copy(alpha = 0.08f),
+                                        SurfaceNavy
+                                    )
+                                )
+                            )
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(AccentGreen.copy(alpha = 0.18f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Android,
+                                        contentDescription = "Android Device",
+                                        tint = AccentGreen,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "HOST ANDROID DEVICE",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = AccentGreen,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.8.sp,
+                                            fontSize = 10.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = hostDeviceInfo.deviceName,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = TextPrimary
+                                        )
+                                    )
+                                }
+                            }
+                            StatusPill(
+                                text = hostDeviceInfo.androidVersion,
+                                color = AccentGreen
+                            )
+                        }
+
+                        HorizontalDivider(color = BorderSubtle)
+
+                        SpecRow(
+                            label = "Device Brand / Model",
+                            value = "${hostDeviceInfo.brand} (${hostDeviceInfo.model})",
+                            onCopy = { copyText(context, "${hostDeviceInfo.brand} ${hostDeviceInfo.model}") }
+                        )
+                        SpecRow(
+                            label = "Android Version & Flavor",
+                            value = "${hostDeviceInfo.androidVersion} • ${hostDeviceInfo.codeName}",
+                            onCopy = { copyText(context, "${hostDeviceInfo.androidVersion} (${hostDeviceInfo.codeName})") }
+                        )
+                        SpecRow(
+                            label = "Processor Architecture",
+                            value = "${hostDeviceInfo.hardware} (${hostDeviceInfo.cpuAbi})",
+                            onCopy = null
+                        )
+                        SpecRow(
+                            label = "RAM Capacity & Usage",
+                            value = String.format("%.1f GB Total (%.1f GB Free • %d%% Used)", hostDeviceInfo.totalRamGb, hostDeviceInfo.availableRamGb, hostDeviceInfo.ramUsagePercent),
+                            onCopy = null
+                        )
+                        SpecRow(
+                            label = "Battery & Power Status",
+                            value = "${hostDeviceInfo.batteryPercent}% ${if (hostDeviceInfo.isCharging) "(⚡ Charging)" else "(On Battery)"}",
+                            onCopy = null
+                        )
+                        SpecRow(
+                            label = "System Build ID",
+                            value = hostDeviceInfo.buildId,
+                            onCopy = { copyText(context, hostDeviceInfo.buildId) }
+                        )
+                        SpecRow(
+                            label = "Device Uptime",
+                            value = hostDeviceInfo.uptimeFormatted,
+                            onCopy = null
+                        )
+                    }
                 }
             }
         }

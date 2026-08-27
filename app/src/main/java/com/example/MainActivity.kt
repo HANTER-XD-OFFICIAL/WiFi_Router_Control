@@ -100,6 +100,7 @@ fun MainApp(viewModel: RouterViewModel) {
     // Collect States
     val currentLanguage by viewModel.currentLanguage.collectAsState()
     val wifiState by viewModel.wifiState.collectAsState()
+    val hostDeviceInfo by viewModel.hostDeviceInfo.collectAsState()
     val allRouters by viewModel.allRouters.collectAsState()
     val boundRouters by viewModel.boundRouters.collectAsState()
     val deviceNicknames by viewModel.deviceNicknames.collectAsState()
@@ -174,7 +175,6 @@ fun MainApp(viewModel: RouterViewModel) {
                             title = AppStrings.appTitle(currentLanguage),
                             ssid = wifiState.ssid,
                             isConnected = wifiState.isWifiConnected,
-                            onOpenSupport = { currentScreen = 4 },
                             onOpenLanguage = { showLanguageDialog = true },
                             onRefresh = {
                                 viewModel.refreshWifiState()
@@ -280,6 +280,7 @@ fun MainApp(viewModel: RouterViewModel) {
                         0 -> DashboardScreen(
                             wifiState = wifiState,
                             boundRouters = boundRouters,
+                            hostDeviceInfo = hostDeviceInfo,
                             onOpenAdmin = { url, user, pass ->
                                 viewModel.openRouterAdmin(url, user, pass)
                                 currentScreen = 5
